@@ -1,0 +1,10 @@
+[package]
+name = "rustlex"
+version = "0.1.0"
+authors = ["Michael Layzell <michael@thelayzells.com>"]
+description = "A lexer for rust tokens"
+repository = "https://github.com/mystor/rustlex"
+
+[dependencies]
+unicode-xid = "0.0.4"
+memchr = "1.0"
