@@ -33,4 +33,3 @@ pub fn offset_line_col(src: &str, offset: usize) -> (usize, usize) {
     }
     (line, offset - prev)
 }
-

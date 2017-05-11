@@ -58,11 +58,9 @@ impl<'a> Lexer<'a> {
                 continue;
             }
 
-            let line_comment = self.byte(0) == b'/' &&
-                self.byte(1) == b'/' &&
-                self.byte(2) != b'!' &&
-                (self.byte(2) != b'/' ||
-                 self.byte(3) == b'/');
+            let line_comment = self.byte(0) == b'/' && self.byte(1) == b'/' &&
+                               self.byte(2) != b'!' &&
+                               (self.byte(2) != b'/' || self.byte(3) == b'/');
 
             if line_comment {
                 if let Some(len) = self.rest().find('\n') {
@@ -74,11 +72,9 @@ impl<'a> Lexer<'a> {
                 }
             }
 
-            let block_comment = self.byte(0) == b'/' &&
-                self.byte(1) == b'*' &&
-                self.byte(2) != b'!' &&
-                (self.byte(2) != b'*' ||
-                 self.byte(3) == b'*');
+            let block_comment = self.byte(0) == b'/' && self.byte(1) == b'*' &&
+                                self.byte(2) != b'!' &&
+                                (self.byte(2) != b'*' || self.byte(3) == b'*');
 
             if block_comment {
                 self.block_comment()?;
@@ -107,12 +103,12 @@ impl<'a> Lexer<'a> {
                 self.idx += 2;
                 if depth == 0 {
                     return Ok(Spanned {
-                        node: &self.input[start..self.idx],
-                        span: Span {
-                            lo: start,
-                            hi: self.idx,
-                        },
-                    });
+                                  node: &self.input[start..self.idx],
+                                  span: Span {
+                                      lo: start,
+                                      hi: self.idx,
+                                  },
+                              });
                 }
                 continue;
             }
@@ -146,207 +142,239 @@ impl<'a> Lexer<'a> {
         };
 
         Ok(Some(Spanned {
-            node: if inner_byte == block_byte {
-                Token::OuterDoc(text.into())
-            } else if inner_byte == b'!' {
-                Token::InnerDoc(text.into())
-            } else {
-                unreachable!()
-            },
-            span: Span {
-                lo: start,
-                hi: self.idx,
-            },
-        }))
+                    node: if inner_byte == block_byte {
+                        Token::OuterDoc(text.into())
+                    } else if inner_byte == b'!' {
+                        Token::InnerDoc(text.into())
+                    } else {
+                        unreachable!()
+                    },
+                    span: Span {
+                        lo: start,
+                        hi: self.idx,
+                    },
+                }))
     }
 
     fn symbol(&mut self) -> LexResult<Option<Spanned<Token>>> {
         let start = self.idx;
         let tok = match self.byte(0) {
-            b'=' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::EqEq
-                }
-                b'>' => {
-                    self.idx += 2;
-                    Token::FatArrow
-                }
-                _ => {
-                    self.idx += 1;
-                    Token::Eq
-                }
-            },
-            b'<' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::Le
-                }
-                b'-' => {
-                    self.idx += 2;
-                    Token::LArrow
-                }
-                b'<' => match self.byte(2) {
+            b'=' => {
+                match self.byte(1) {
                     b'=' => {
-                        self.idx += 3;
-                        Token::ShlEq
+                        self.idx += 2;
+                        Token::EqEq
+                    }
+                    b'>' => {
+                        self.idx += 2;
+                        Token::FatArrow
                     }
                     _ => {
-                        self.idx += 2;
-                        Token::Shl
+                        self.idx += 1;
+                        Token::Eq
                     }
-                },
-                _ => {
-                    self.idx += 1;
-                    Token::Lt
                 }
-            },
-            b'>' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::Ge
-                }
-                b'>' => match self.byte(2) {
+            }
+            b'<' => {
+                match self.byte(1) {
                     b'=' => {
-                        self.idx += 3;
-                        Token::ShrEq
+                        self.idx += 2;
+                        Token::Le
+                    }
+                    b'-' => {
+                        self.idx += 2;
+                        Token::LArrow
+                    }
+                    b'<' => {
+                        match self.byte(2) {
+                            b'=' => {
+                                self.idx += 3;
+                                Token::ShlEq
+                            }
+                            _ => {
+                                self.idx += 2;
+                                Token::Shl
+                            }
+                        }
                     }
                     _ => {
-                        self.idx += 2;
-                        Token::Shr
+                        self.idx += 1;
+                        Token::Lt
                     }
-                },
-                _ => {
-                    self.idx += 1;
-                    Token::Gt
                 }
-            },
-            b'!' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::Ne
+            }
+            b'>' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::Ge
+                    }
+                    b'>' => {
+                        match self.byte(2) {
+                            b'=' => {
+                                self.idx += 3;
+                                Token::ShrEq
+                            }
+                            _ => {
+                                self.idx += 2;
+                                Token::Shr
+                            }
+                        }
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Gt
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::Not
+            }
+            b'!' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::Ne
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Not
+                    }
                 }
-            },
-            b'&' => match self.byte(1) {
-                b'&' => {
-                    self.idx += 2;
-                    Token::AndAnd
+            }
+            b'&' => {
+                match self.byte(1) {
+                    b'&' => {
+                        self.idx += 2;
+                        Token::AndAnd
+                    }
+                    b'=' => {
+                        self.idx += 2;
+                        Token::AndEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::And
+                    }
                 }
-                b'=' => {
-                    self.idx += 2;
-                    Token::AndEq
+            }
+            b'|' => {
+                match self.byte(1) {
+                    b'|' => {
+                        self.idx += 2;
+                        Token::OrOr
+                    }
+                    b'=' => {
+                        self.idx += 2;
+                        Token::OrEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Or
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::And
-                }
-            },
-            b'|' => match self.byte(1) {
-                b'|' => {
-                    self.idx += 2;
-                    Token::OrOr
-                }
-                b'=' => {
-                    self.idx += 2;
-                    Token::OrEq
-                }
-                _ => {
-                    self.idx += 1;
-                    Token::Or
-                }
-            },
+            }
             b'~' => {
                 self.idx += 1;
                 Token::Tilde
             }
-            b'+' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::PlusEq
+            b'+' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::PlusEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Plus
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::Plus
+            }
+            b'-' => {
+                match self.byte(1) {
+                    b'>' => {
+                        self.idx += 2;
+                        Token::RArrow
+                    }
+                    b'=' => {
+                        self.idx += 2;
+                        Token::MinusEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Minus
+                    }
                 }
-            },
-            b'-' => match self.byte(1) {
-                b'>' => {
-                    self.idx += 2;
-                    Token::RArrow
+            }
+            b'*' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::StarEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Star
+                    }
                 }
-                b'=' => {
-                    self.idx += 2;
-                    Token::MinusEq
+            }
+            b'/' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::SlashEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Slash
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::Minus
+            }
+            b'%' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::PercentEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Percent
+                    }
                 }
-            },
-            b'*' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::StarEq
+            }
+            b'^' => {
+                match self.byte(1) {
+                    b'=' => {
+                        self.idx += 2;
+                        Token::CaretEq
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Caret
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::Star
-                }
-            },
-            b'/' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::SlashEq
-                }
-                _ => {
-                    self.idx += 1;
-                    Token::Slash
-                }
-            },
-            b'%' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::PercentEq
-                }
-                _ => {
-                    self.idx += 1;
-                    Token::Percent
-                }
-            },
-            b'^' => match self.byte(1) {
-                b'=' => {
-                    self.idx += 2;
-                    Token::CaretEq
-                }
-                _ => {
-                    self.idx += 1;
-                    Token::Caret
-                }
-            },
+            }
             b'@' => {
                 self.idx += 1;
                 Token::At
             }
-            b'.' => match self.byte(1) {
-                b'.' => match self.byte(2) {
+            b'.' => {
+                match self.byte(1) {
                     b'.' => {
-                        self.idx += 3;
-                        Token::DotDotDot
+                        match self.byte(2) {
+                            b'.' => {
+                                self.idx += 3;
+                                Token::DotDotDot
+                            }
+                            _ => {
+                                self.idx += 2;
+                                Token::DotDot
+                            }
+                        }
                     }
                     _ => {
-                        self.idx += 2;
-                        Token::DotDot
+                        self.idx += 1;
+                        Token::Dot
                     }
-                },
-                _ => {
-                    self.idx += 1;
-                    Token::Dot
                 }
-            },
+            }
             b',' => {
                 self.idx += 1;
                 Token::Comma
@@ -355,16 +383,18 @@ impl<'a> Lexer<'a> {
                 self.idx += 1;
                 Token::Semi
             }
-            b':' => match self.byte(1) {
-                b':' => {
-                    self.idx += 2;
-                    Token::ModSep
+            b':' => {
+                match self.byte(1) {
+                    b':' => {
+                        self.idx += 2;
+                        Token::ModSep
+                    }
+                    _ => {
+                        self.idx += 1;
+                        Token::Colon
+                    }
                 }
-                _ => {
-                    self.idx += 1;
-                    Token::Colon
-                }
-            },
+            }
             b'#' => {
                 self.idx += 1;
                 Token::Pound
@@ -401,16 +431,16 @@ impl<'a> Lexer<'a> {
                 self.idx += 1;
                 Token::RBracket
             }
-            _ => return Ok(None)
+            _ => return Ok(None),
         };
 
         Ok(Some(Spanned {
-            node: tok,
-            span: Span {
-                lo: start,
-                hi: self.idx,
-            }
-        }))
+                    node: tok,
+                    span: Span {
+                        lo: start,
+                        hi: self.idx,
+                    },
+                }))
     }
 
     fn word(&mut self) -> Option<&'a str> {
@@ -442,69 +472,69 @@ impl<'a> Lexer<'a> {
         };
 
         Ok(Some(Spanned {
-            node: {
-                match word {
-                    "_" => Token::Underscore,
-                    "abstract" => Token::Abstract,
-                    "alignof" => Token::Alignof,
-                    "as" => Token::As,
-                    "become" => Token::Become,
-                    "box" => Token::Box,
-                    "break" => Token::Break,
-                    "const" => Token::Const,
-                    "continue" => Token::Continue,
-                    "crate" => Token::Crate,
-                    "do" => Token::Do,
-                    "else" => Token::Else,
-                    "enum" => Token::Enum,
-                    "extern" => Token::Extern,
-                    "false" => Token::Lit(Lit::Bool(false)),
-                    "final" => Token::Final,
-                    "fn" => Token::Fn,
-                    "for" => Token::For,
-                    "if" => Token::If,
-                    "impl" => Token::Impl,
-                    "in" => Token::In,
-                    "let" => Token::Let,
-                    "loop" => Token::Loop,
-                    "macro" => Token::Macro,
-                    "match" => Token::Match,
-                    "mod" => Token::Mod,
-                    "move" => Token::Move,
-                    "mut" => Token::Mut,
-                    "offsetof" => Token::Offsetof,
-                    "override" => Token::Override,
-                    "priv" => Token::Priv,
-                    "proc" => Token::Proc,
-                    "pub" => Token::Pub,
-                    "pure" => Token::Pure,
-                    "ref" => Token::Ref,
-                    "return" => Token::Return,
-                    "Self" => Token::CapSelf,
-                    "self" => Token::LowSelf,
-                    "sizeof" => Token::Sizeof,
-                    "static" => Token::Static,
-                    "struct" => Token::Struct,
-                    "super" => Token::Super,
-                    "trait" => Token::Trait,
-                    "true" => Token::Lit(Lit::Bool(true)),
-                    "type" => Token::Type,
-                    "typeof" => Token::Typeof,
-                    "unsafe" => Token::Unsafe,
-                    "unsized" => Token::Unsized,
-                    "use" => Token::Use,
-                    "virtual" => Token::Virtual,
-                    "where" => Token::Where,
-                    "while" => Token::While,
-                    "yield" => Token::Yield,
-                    id => Token::Ident(id.into()),
-                }
-            },
-            span: Span {
-                lo: start,
-                hi: self.idx,
-            }
-        }))
+                    node: {
+                        match word {
+                            "_" => Token::Underscore,
+                            "abstract" => Token::Abstract,
+                            "alignof" => Token::Alignof,
+                            "as" => Token::As,
+                            "become" => Token::Become,
+                            "box" => Token::Box,
+                            "break" => Token::Break,
+                            "const" => Token::Const,
+                            "continue" => Token::Continue,
+                            "crate" => Token::Crate,
+                            "do" => Token::Do,
+                            "else" => Token::Else,
+                            "enum" => Token::Enum,
+                            "extern" => Token::Extern,
+                            "false" => Token::Lit(Lit::Bool(false)),
+                            "final" => Token::Final,
+                            "fn" => Token::Fn,
+                            "for" => Token::For,
+                            "if" => Token::If,
+                            "impl" => Token::Impl,
+                            "in" => Token::In,
+                            "let" => Token::Let,
+                            "loop" => Token::Loop,
+                            "macro" => Token::Macro,
+                            "match" => Token::Match,
+                            "mod" => Token::Mod,
+                            "move" => Token::Move,
+                            "mut" => Token::Mut,
+                            "offsetof" => Token::Offsetof,
+                            "override" => Token::Override,
+                            "priv" => Token::Priv,
+                            "proc" => Token::Proc,
+                            "pub" => Token::Pub,
+                            "pure" => Token::Pure,
+                            "ref" => Token::Ref,
+                            "return" => Token::Return,
+                            "Self" => Token::CapSelf,
+                            "self" => Token::LowSelf,
+                            "sizeof" => Token::Sizeof,
+                            "static" => Token::Static,
+                            "struct" => Token::Struct,
+                            "super" => Token::Super,
+                            "trait" => Token::Trait,
+                            "true" => Token::Lit(Lit::Bool(true)),
+                            "type" => Token::Type,
+                            "typeof" => Token::Typeof,
+                            "unsafe" => Token::Unsafe,
+                            "unsized" => Token::Unsized,
+                            "use" => Token::Use,
+                            "virtual" => Token::Virtual,
+                            "where" => Token::Where,
+                            "while" => Token::While,
+                            "yield" => Token::Yield,
+                            id => Token::Ident(id.into()),
+                        }
+                    },
+                    span: Span {
+                        lo: start,
+                        hi: self.idx,
+                    },
+                }))
     }
 
     fn num(&mut self) -> LexResult<Option<Spanned<Token>>> {
@@ -547,10 +577,8 @@ impl<'a> Lexer<'a> {
                 }
                 b'.' if base == 10 => {
                     self.idx += 1;
-                    let ignorable =
-                        has_dot ||
-                        self.byte(0) == b'.' ||
-                        UnicodeXID::is_xid_start(self.next_char());
+                    let ignorable = has_dot || self.byte(0) == b'.' ||
+                                    UnicodeXID::is_xid_start(self.next_char());
                     if ignorable {
                         self.idx -= 1;
                         break;
@@ -587,11 +615,14 @@ impl<'a> Lexer<'a> {
                     b'_' => {
                         self.idx += 1;
                     }
-                    _ => if !has_value {
-                        fmt_err!(self, "unexpected end of float literal after \
+                    _ => {
+                        if !has_value {
+                            fmt_err!(self,
+                                     "unexpected end of float literal after \
                                         `E` character");
-                    } else {
-                        break;
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
@@ -649,23 +680,25 @@ impl<'a> Lexer<'a> {
                 self.idx += 3;
                 Token::Lit(Lit::Integer(value, IntSuffix::Isize))
             }
-            _ => if can_be_int {
-                Token::Lit(Lit::Integer(value, IntSuffix::Unsuffixed))
-            } else if can_be_float {
-                Token::Lit(Lit::Float(self.input[start..self.idx].into(),
-                                      FloatSuffix::Unsuffixed))
-            } else {
-                unreachable!()
+            _ => {
+                if can_be_int {
+                    Token::Lit(Lit::Integer(value, IntSuffix::Unsuffixed))
+                } else if can_be_float {
+                    Token::Lit(Lit::Float(self.input[start..self.idx].into(),
+                                          FloatSuffix::Unsuffixed))
+                } else {
+                    unreachable!()
+                }
             }
         };
 
         Ok(Some(Spanned {
-            node: node,
-            span: Span {
-                lo: start,
-                hi: self.idx,
-            }
-        }))
+                    node: node,
+                    span: Span {
+                        lo: start,
+                        hi: self.idx,
+                    },
+                }))
     }
 
     fn raw_str(&mut self) -> LexResult<String> {
@@ -675,7 +708,8 @@ impl<'a> Lexer<'a> {
             self.idx += 1;
         }
         if self.byte(0) != b'"' {
-            fmt_err!(self, "unexpected character while parsing raw string literal");
+            fmt_err!(self,
+                     "unexpected character while parsing raw string literal");
         }
         self.idx += 1;
         let inner_start = self.idx;
@@ -707,18 +741,20 @@ impl<'a> Lexer<'a> {
         let mut ch = 0;
         let b0 = self.byte(0);
         let b1 = self.byte(1);
-        ch += 0x10 * match b0 {
-            b'0'...b'9' => b0 - b'0',
-            b'a'...b'f' => 10 + (b0 - b'a'),
-            b'A'...b'F' => 10 + (b0 - b'A'),
-            _ => fmt_err!(self, "unexpected non-hex character after \\x"),
-        };
-        ch += 0x1 * match b1 {
-            b'0'...b'9' => b1 - b'0',
-            b'a'...b'f' => 10 + (b1 - b'a'),
-            b'A'...b'F' => 10 + (b1 - b'A'),
-            _ => fmt_err!(self, "unexpected non-hex character after \\x"),
-        };
+        ch += 0x10 *
+              match b0 {
+                  b'0'...b'9' => b0 - b'0',
+                  b'a'...b'f' => 10 + (b0 - b'a'),
+                  b'A'...b'F' => 10 + (b0 - b'A'),
+                  _ => fmt_err!(self, "unexpected non-hex character after \\x"),
+              };
+        ch += 0x1 *
+              match b1 {
+                  b'0'...b'9' => b1 - b'0',
+                  b'a'...b'f' => 10 + (b1 - b'a'),
+                  b'A'...b'F' => 10 + (b1 - b'A'),
+                  _ => fmt_err!(self, "unexpected non-hex character after \\x"),
+              };
         self.idx += 2;
         Ok(ch)
     }
@@ -758,7 +794,9 @@ impl<'a> Lexer<'a> {
         if let Some(ch) = char::from_u32(ch) {
             Ok(ch)
         } else {
-            fmt_err!(self, "character code {:x} is not a valid unicode character", ch);
+            fmt_err!(self,
+                     "character code {:x} is not a valid unicode character",
+                     ch);
         }
     }
 
@@ -823,8 +861,12 @@ impl<'a> Lexer<'a> {
                             }
                             continue;
                         }
-                        Some(b) => fmt_err!(self, "unexpected byte {:?} after \\ character \
-                                                   in byte literal", b),
+                        Some(b) => {
+                            fmt_err!(self,
+                                     "unexpected byte {:?} after \\ character \
+                                                   in byte literal",
+                                     b)
+                        }
                         None => fmt_err!(self, "unexpected Eof after \\ character in byte literal"),
                     }
                 }
@@ -832,8 +874,8 @@ impl<'a> Lexer<'a> {
                     let ch = self.next_char();
                     self.idx += ch.len_utf8();
                     ch
-                },
-                None => fmt_err!(self, "unexpected Eof while parsing byte literal")
+                }
+                None => fmt_err!(self, "unexpected Eof while parsing byte literal"),
             };
             s.push(ch);
         }
@@ -892,16 +934,20 @@ impl<'a> Lexer<'a> {
                             }
                             continue;
                         }
-                        Some(b) => fmt_err!(self, "unexpected byte {:?} after \\ character \
-                                                   in byte literal", b),
+                        Some(b) => {
+                            fmt_err!(self,
+                                     "unexpected byte {:?} after \\ character \
+                                                   in byte literal",
+                                     b)
+                        }
                         None => fmt_err!(self, "unexpected Eof after \\ character in byte literal"),
                     }
                 }
                 Some(b) => {
                     self.idx += 1;
                     b
-                },
-                None => fmt_err!(self, "unexpected Eof while parsing byte literal")
+                }
+                None => fmt_err!(self, "unexpected Eof while parsing byte literal"),
             };
             s.push(byte);
         }
@@ -950,8 +996,12 @@ impl<'a> Lexer<'a> {
                         self.idx += 2;
                         '"'
                     }
-                    Some(b) => fmt_err!(self, "unexpected byte {:?} after \\ character \
-                                               in byte literal", b),
+                    Some(b) => {
+                        fmt_err!(self,
+                                 "unexpected byte {:?} after \\ character \
+                                               in byte literal",
+                                 b)
+                    }
                     None => fmt_err!(self, "unexpected Eof after \\ character in byte literal"),
                 }
             }
@@ -959,8 +1009,8 @@ impl<'a> Lexer<'a> {
                 let ch = self.next_char();
                 self.idx += ch.len_utf8();
                 ch
-            },
-            None => fmt_err!(self, "unexpected Eof while parsing byte literal")
+            }
+            None => fmt_err!(self, "unexpected Eof while parsing byte literal"),
         };
 
         if self.byte(0) != b'\'' {
@@ -1008,8 +1058,12 @@ impl<'a> Lexer<'a> {
                         self.idx += 2;
                         b'"'
                     }
-                    Some(b) => fmt_err!(self, "unexpected byte {:?} after \\ character \
-                                               in byte literal", b),
+                    Some(b) => {
+                        fmt_err!(self,
+                                 "unexpected byte {:?} after \\ character \
+                                               in byte literal",
+                                 b)
+                    }
                     None => fmt_err!(self, "unexpected Eof after \\ character in byte literal"),
                 }
             }
@@ -1019,8 +1073,8 @@ impl<'a> Lexer<'a> {
                 // that we are.
                 self.idx += 1;
                 b
-            },
-            None => fmt_err!(self, "unexpected Eof while parsing byte literal")
+            }
+            None => fmt_err!(self, "unexpected Eof while parsing byte literal"),
         };
 
         assert!(self.byte(0) == b'\'');
@@ -1068,12 +1122,12 @@ impl<'a> Lexer<'a> {
         };
 
         Ok(Some(Spanned {
-            node: node,
-            span: Span {
-                lo: start,
-                hi: self.idx,
-            }
-        }))
+                    node: node,
+                    span: Span {
+                        lo: start,
+                        hi: self.idx,
+                    },
+                }))
     }
 
     fn err_info(&self) -> (usize, usize, usize) {
@@ -1106,7 +1160,8 @@ impl<'a> Lexer<'a> {
         }
 
         if self.rest().len() > 0 {
-            fmt_err!(self, "unexpected character {:?} does not start any token",
+            fmt_err!(self,
+                     "unexpected character {:?} does not start any token",
                      self.next_char());
         }
 
@@ -1147,14 +1202,13 @@ mod test {
     #[test]
     fn symbols() {
         let result = unspan_tok("+ - += -= / /= // This is a comment");
-        assert_eq!(result, &[
-            Token::Plus,
-            Token::Minus,
-            Token::PlusEq,
-            Token::MinusEq,
-            Token::Slash,
-            Token::SlashEq,
-        ]);
+        assert_eq!(result,
+                   &[Token::Plus,
+                     Token::Minus,
+                     Token::PlusEq,
+                     Token::MinusEq,
+                     Token::Slash,
+                     Token::SlashEq]);
     }
 
     #[test]
@@ -1167,11 +1221,7 @@ Can span
 Many /* lines */ And be nested */
 *
 "#);
-        assert_eq!(result, &[
-            Token::Plus,
-            Token::Slash,
-            Token::Star,
-        ]);
+        assert_eq!(result, &[Token::Plus, Token::Slash, Token::Star]);
     }
 
     #[test]
@@ -1180,59 +1230,59 @@ Many /* lines */ And be nested */
                                & | << >> += -= *= /= %= ^= &= |= <<= \
                                >>= @ . .. ... , ; : :: -> <- => # $ ? ( \
                                { [ ] } )");
-        assert_eq!(result, &[
-            Token::Eq,
-            Token::Lt,
-            Token::Le,
-            Token::EqEq,
-            Token::Ne,
-            Token::Ge,
-            Token::Gt,
-            Token::AndAnd,
-            Token::OrOr,
-            Token::Not,
-            Token::Tilde,
-            Token::Plus,
-            Token::Minus,
-            Token::Star,
-            Token::Slash,
-            Token::Percent,
-            Token::Caret,
-            Token::And,
-            Token::Or,
-            Token::Shl,
-            Token::Shr,
-            Token::PlusEq,
-            Token::MinusEq,
-            Token::StarEq,
-            Token::SlashEq,
-            Token::PercentEq,
-            Token::CaretEq,
-            Token::AndEq,
-            Token::OrEq,
-            Token::ShlEq,
-            Token::ShrEq,
-            Token::At,
-            Token::Dot,
-            Token::DotDot,
-            Token::DotDotDot,
-            Token::Comma,
-            Token::Semi,
-            Token::Colon,
-            Token::ModSep,
-            Token::RArrow,
-            Token::LArrow,
-            Token::FatArrow,
-            Token::Pound,
-            Token::Dollar,
-            Token::Question,
-            Token::LParen,
-            Token::LBrace,
-            Token::LBracket,
-            Token::RBracket,
-            Token::RBrace,
-            Token::RParen,
-        ][..]);
+        assert_eq!(result,
+                   &[Token::Eq,
+                     Token::Lt,
+                     Token::Le,
+                     Token::EqEq,
+                     Token::Ne,
+                     Token::Ge,
+                     Token::Gt,
+                     Token::AndAnd,
+                     Token::OrOr,
+                     Token::Not,
+                     Token::Tilde,
+                     Token::Plus,
+                     Token::Minus,
+                     Token::Star,
+                     Token::Slash,
+                     Token::Percent,
+                     Token::Caret,
+                     Token::And,
+                     Token::Or,
+                     Token::Shl,
+                     Token::Shr,
+                     Token::PlusEq,
+                     Token::MinusEq,
+                     Token::StarEq,
+                     Token::SlashEq,
+                     Token::PercentEq,
+                     Token::CaretEq,
+                     Token::AndEq,
+                     Token::OrEq,
+                     Token::ShlEq,
+                     Token::ShrEq,
+                     Token::At,
+                     Token::Dot,
+                     Token::DotDot,
+                     Token::DotDotDot,
+                     Token::Comma,
+                     Token::Semi,
+                     Token::Colon,
+                     Token::ModSep,
+                     Token::RArrow,
+                     Token::LArrow,
+                     Token::FatArrow,
+                     Token::Pound,
+                     Token::Dollar,
+                     Token::Question,
+                     Token::LParen,
+                     Token::LBrace,
+                     Token::LBracket,
+                     Token::RBracket,
+                     Token::RBrace,
+                     Token::RParen]
+                        [..]);
     }
 
     #[test]
@@ -1251,29 +1301,27 @@ Many /* lines */ And be nested */
     comment */
 "#);
 
-        assert_eq!(result, &[
-            Token::OuterDoc("/// Outer Doc comment".into()),
-            Token::OuterDoc("/// Which spans multiple lines".into()),
-            Token::OuterDoc("/**\n * Multiline outer doc comment\n */".into()),
-            Token::InnerDoc("//! Inner Doc Comment".into()),
-            Token::InnerDoc("/*! Inner multiline doc\n    comment */".into()),
-        ]);
+        assert_eq!(result,
+                   &[Token::OuterDoc("/// Outer Doc comment".into()),
+                     Token::OuterDoc("/// Which spans multiple lines".into()),
+                     Token::OuterDoc("/**\n * Multiline outer doc comment\n */".into()),
+                     Token::InnerDoc("//! Inner Doc Comment".into()),
+                     Token::InnerDoc("/*! Inner multiline doc\n    comment */".into())]);
     }
 
     #[test]
     fn idents() {
         let result = unspan_tok("apple pear _ _food __apples let for Self");
 
-        assert_eq!(result, &[
-            Token::Ident("apple".into()),
-            Token::Ident("pear".into()),
-            Token::Underscore,
-            Token::Ident("_food".into()),
-            Token::Ident("__apples".into()),
-            Token::Let,
-            Token::For,
-            Token::CapSelf,
-        ]);
+        assert_eq!(result,
+                   &[Token::Ident("apple".into()),
+                     Token::Ident("pear".into()),
+                     Token::Underscore,
+                     Token::Ident("_food".into()),
+                     Token::Ident("__apples".into()),
+                     Token::Let,
+                     Token::For,
+                     Token::CapSelf]);
     }
 
     #[test]
@@ -1286,76 +1334,75 @@ Many /* lines */ And be nested */
                                Self self sizeof static struct super \
                                trait true type typeof unsafe unsized \
                                use virtual where while yield _");
-        assert_eq!(result, &[
-            Token::Abstract,
-            Token::Alignof,
-            Token::As,
-            Token::Become,
-            Token::Box,
-            Token::Break,
-            Token::Const,
-            Token::Continue,
-            Token::Crate,
-            Token::Do,
-            Token::Else,
-            Token::Enum,
-            Token::Extern,
-            Token::Lit(Lit::Bool(false)),
-            Token::Final,
-            Token::Fn,
-            Token::For,
-            Token::If,
-            Token::Impl,
-            Token::In,
-            Token::Let,
-            Token::Loop,
-            Token::Macro,
-            Token::Match,
-            Token::Mod,
-            Token::Move,
-            Token::Mut,
-            Token::Offsetof,
-            Token::Override,
-            Token::Priv,
-            Token::Proc,
-            Token::Pub,
-            Token::Pure,
-            Token::Ref,
-            Token::Return,
-            Token::CapSelf,
-            Token::LowSelf,
-            Token::Sizeof,
-            Token::Static,
-            Token::Struct,
-            Token::Super,
-            Token::Trait,
-            Token::Lit(Lit::Bool(true)),
-            Token::Type,
-            Token::Typeof,
-            Token::Unsafe,
-            Token::Unsized,
-            Token::Use,
-            Token::Virtual,
-            Token::Where,
-            Token::While,
-            Token::Yield,
-            Token::Underscore,
-        ][..]);
+        assert_eq!(result,
+                   &[Token::Abstract,
+                     Token::Alignof,
+                     Token::As,
+                     Token::Become,
+                     Token::Box,
+                     Token::Break,
+                     Token::Const,
+                     Token::Continue,
+                     Token::Crate,
+                     Token::Do,
+                     Token::Else,
+                     Token::Enum,
+                     Token::Extern,
+                     Token::Lit(Lit::Bool(false)),
+                     Token::Final,
+                     Token::Fn,
+                     Token::For,
+                     Token::If,
+                     Token::Impl,
+                     Token::In,
+                     Token::Let,
+                     Token::Loop,
+                     Token::Macro,
+                     Token::Match,
+                     Token::Mod,
+                     Token::Move,
+                     Token::Mut,
+                     Token::Offsetof,
+                     Token::Override,
+                     Token::Priv,
+                     Token::Proc,
+                     Token::Pub,
+                     Token::Pure,
+                     Token::Ref,
+                     Token::Return,
+                     Token::CapSelf,
+                     Token::LowSelf,
+                     Token::Sizeof,
+                     Token::Static,
+                     Token::Struct,
+                     Token::Super,
+                     Token::Trait,
+                     Token::Lit(Lit::Bool(true)),
+                     Token::Type,
+                     Token::Typeof,
+                     Token::Unsafe,
+                     Token::Unsized,
+                     Token::Use,
+                     Token::Virtual,
+                     Token::Where,
+                     Token::While,
+                     Token::Yield,
+                     Token::Underscore]
+                        [..]);
     }
 
     #[test]
     fn numbers() {
         let result = unspan_tok("0 10i32 0x17faed 0. 0.03 4f32 10.3E3_7f64");
 
-        assert_eq!(result, &[
-            Token::Lit(Lit::Integer(0, IntSuffix::Unsuffixed)),
-            Token::Lit(Lit::Integer(10, IntSuffix::I32)),
-            Token::Lit(Lit::Integer(0x17faed, IntSuffix::Unsuffixed)),
-            Token::Lit(Lit::Float("0.".into(), FloatSuffix::Unsuffixed)),
-            Token::Lit(Lit::Float("0.03".into(), FloatSuffix::Unsuffixed)),
-            Token::Lit(Lit::Float("4f32".into(), FloatSuffix::F32)),
-            Token::Lit(Lit::Float("10.3E3_7f64".into(), FloatSuffix::F64)),
-        ]);
+        assert_eq!(result,
+                   &[Token::Lit(Lit::Integer(0, IntSuffix::Unsuffixed)),
+                     Token::Lit(Lit::Integer(10, IntSuffix::I32)),
+                     Token::Lit(Lit::Integer(0x17faed, IntSuffix::Unsuffixed)),
+                     Token::Lit(Lit::Float("0.".into(), FloatSuffix::Unsuffixed)),
+                     Token::Lit(Lit::Float("0.03".into(), FloatSuffix::Unsuffixed)),
+                     Token::Lit(Lit::Float("4f32".into(), FloatSuffix::F32)),
+                     Token::Lit(Lit::Float("10.3E3_7f64".into(), FloatSuffix::F64))]);
     }
 
     #[test]
@@ -1373,31 +1420,29 @@ r##"apple"##
 '\x14'
 "###);
 
-        assert_eq!(result, &[
-            Token::Lit(Lit::Str("apple".into())),
-            Token::Lit(Lit::Char('a')),
-            Token::Lifetime("a".into()),
-            Token::Lifetime("apples".into()),
-            Token::Lit(Lit::ByteStr(b"apple".to_vec())),
-            Token::Lit(Lit::Byte(b'a')),
-            Token::Lit(Lit::ByteStr(b"apple".to_vec())),
-            Token::Lit(Lit::Str("apple".into())),
-            Token::Lit(Lit::Str("apple".into())),
-            Token::Lit(Lit::Char('\x14')),
-        ]);
+        assert_eq!(result,
+                   &[Token::Lit(Lit::Str("apple".into())),
+                     Token::Lit(Lit::Char('a')),
+                     Token::Lifetime("a".into()),
+                     Token::Lifetime("apples".into()),
+                     Token::Lit(Lit::ByteStr(b"apple".to_vec())),
+                     Token::Lit(Lit::Byte(b'a')),
+                     Token::Lit(Lit::ByteStr(b"apple".to_vec())),
+                     Token::Lit(Lit::Str("apple".into())),
+                     Token::Lit(Lit::Str("apple".into())),
+                     Token::Lit(Lit::Char('\x14'))]);
     }
 
     #[test]
     fn test_spans() {
-        assert_eq!(tokenize("fn apple"), Ok(vec![
-            Spanned {
-                node: Token::Fn,
-                span: Span { lo: 0, hi: 2 },
-            },
-            Spanned {
-                node: Token::Ident("apple".to_owned()),
-                span: Span { lo: 3, hi: 8 },
-            },
-        ]));
+        assert_eq!(tokenize("fn apple"),
+                   Ok(vec![Spanned {
+                               node: Token::Fn,
+                               span: Span { lo: 0, hi: 2 },
+                           },
+                           Spanned {
+                               node: Token::Ident("apple".to_owned()),
+                               span: Span { lo: 3, hi: 8 },
+                           }]));
     }
 }

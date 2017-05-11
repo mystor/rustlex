@@ -34,8 +34,7 @@ pub struct LexError {
 
 impl Display for LexError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Lex Error {}:{}: {}",
-               self.line, self.col, self.reason)
+        write!(f, "Lex Error {}:{}: {}", self.line, self.col, self.reason)
     }
 }
 
